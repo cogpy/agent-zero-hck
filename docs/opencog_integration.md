@@ -268,8 +268,8 @@ System learns from experience:
 ## Technical Details
 
 ### Dependencies
-- `networkx>=3.2.1`: Graph operations
-- `hyperon>=0.1.12`: Symbolic reasoning support
+- `networkx>=3.2.1`: Graph operations for hypergraph structure
+- `hyperon>=0.2.8`: Reserved for future symbolic reasoning extensions
 
 ### File Structure
 ```

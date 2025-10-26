@@ -158,8 +158,8 @@ Run the OpenCog demo to see all features:
 - `prompts/default/agent.system.tool.opencog.md` - Tool documentation
 
 ### Dependencies
-- `networkx>=3.2.1` - Graph operations
-- `hyperon>=0.2.8` - Symbolic reasoning support
+- `networkx>=3.2.1` - Graph operations for hypergraph structure
+- `hyperon>=0.2.8` - Reserved for future symbolic reasoning extensions
 
 ## Contributing
 
