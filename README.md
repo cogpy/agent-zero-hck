@@ -35,7 +35,16 @@
 
 ![Agent 0 Working](/docs/res/ui-screen-2.png)
 
-2. **Computer as a Tool**
+2. **OpenCog Cognitive Architecture (Cog-Zero)**
+
+- **Integrated OpenCog**: Agent Zero now includes OpenCog-inspired cognitive architecture for advanced knowledge representation and reasoning.
+- **AtomSpace**: Hypergraph-based knowledge representation system for multi-agent cognitive orchestration.
+- **Adaptive Evolution**: Dynamic knowledge structures that evolve based on agent experiences and interactions.
+- **Living Dynamical Systems**: Embedded in cognitive processes with attention allocation and spreading activation mechanisms.
+- **Pattern Matching**: Advanced query capabilities for discovering relationships and patterns in knowledge.
+- See [OpenCog Integration Documentation](./docs/opencog_integration.md) for details.
+
+3. **Computer as a Tool**
 
 - Agent Zero uses the operating system as a tool to accomplish its tasks. It has no single-purpose tools pre-programmed. Instead, it can write its own code and use the terminal to create and use its own tools as needed.
 - The only default tools in its arsenal are online search, memory features, communication (with the user and other agents), and code/terminal execution. Everything else is created by the agent itself or can be extended by the user.
@@ -44,16 +53,17 @@
 - **Creating Custom Tools:** Extend Agent Zero's functionality by creating your own custom tools.
 - **Instruments:** Instruments are a new type of tool that allow you to create custom functions and procedures that can be called by Agent Zero.
 
-3. **Multi-agent Cooperation**
+4. **Multi-agent Cooperation**
 
 - Every agent has a superior agent giving it tasks and instructions. Every agent then reports back to its superior.
 - In the case of the first agent in the chain (Agent 0), the superior is the human user; the agent sees no difference.
 - Every agent can create its subordinate agent to help break down and solve subtasks. This helps all agents keep their context clean and focused.
+- **Cognitive Orchestration**: With OpenCog integration, agents can share knowledge through AtomSpaces and coordinate through cognitive mechanisms.
 
 ![Multi-agent](docs/res/physics.png)
 ![Multi-agent 2](docs/res/physics-2.png)
 
-4. **Completely Customizable and Extensible**
+5. **Completely Customizable and Extensible**
 
 - Almost nothing in this framework is hard-coded. Nothing is hidden. Everything can be extended or changed by the user.
 - The whole behavior is defined by a system prompt in the **prompts/default/agent.system.md** file. Change this prompt and change the framework dramatically.
@@ -63,7 +73,7 @@
 
 ![Prompts](/docs/res/prompts.png)
 
-5. **Communication is Key**
+6. **Communication is Key**
 
 - Give your agent a proper system prompt and instructions, and it can do miracles.
 - Agents can communicate with their superiors and subordinates, asking questions, giving instructions, and providing guidance. Instruct your agents in the system prompt on how to communicate effectively.
