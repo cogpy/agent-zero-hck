@@ -3,7 +3,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
 import json
-from typing import Any, Awaitable, Coroutine, Optional, Dict, TypedDict
+from typing import Any, Awaitable, Coroutine, Optional, Dict, TypedDict, TYPE_CHECKING
 import uuid
 import models
 
@@ -20,6 +20,9 @@ from python.helpers.dirty_json import DirtyJson
 from python.helpers.defer import DeferredTask
 from typing import Callable
 from python.helpers.localization import Localization
+
+if TYPE_CHECKING:
+    from python.helpers.autognosis import AutognosisOrchestrator
 
 
 class AgentContext:
@@ -246,6 +249,9 @@ class Agent:
     DATA_NAME_SUPERIOR = "_superior"
     DATA_NAME_SUBORDINATE = "_subordinate"
     DATA_NAME_CTX_WINDOW = "ctx_window"
+    
+    # Type hints for dynamic attributes
+    autognosis: "AutognosisOrchestrator | None"
 
     def __init__(
         self, number: int, config: AgentConfig, context: AgentContext | None = None
@@ -265,6 +271,9 @@ class Agent:
         self.last_user_message: history.Message | None = None
         self.intervention: UserMessage | None = None
         self.data = {}  # free data object all the tools can use
+        
+        # autognosis - hierarchical self-image building system
+        self.autognosis = None  # initialized on first use
 
     async def monologue(self):
         while True:

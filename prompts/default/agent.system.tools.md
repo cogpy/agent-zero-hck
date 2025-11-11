@@ -21,3 +21,6 @@
 {{ include './agent.system.tool.scheduler.md' }}
 
 {{ include './agent.system.tool.opencog.md' }}
+
+{{ include './agent.system.tool.autognosis.md' }}
+
