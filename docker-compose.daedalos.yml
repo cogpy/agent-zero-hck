@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # daedalOS Virtual Desktop Environment
+  daedalos:
+    build:
+      context: ./daedalos-env
+      dockerfile: Dockerfile
+    container_name: daedalos-desktop
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - AGENT_ZERO_API_URL=http://agent-zero-api:8000
+      - AGENT_ZERO_WS_URL=ws://agent-zero-api:8000
+    depends_on:
+      - agent-zero-api
+    networks:
+      - agent-zero-network
+    volumes:
+      - daedalos-data:/home/daedalos
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Agent Zero Integration API
+  agent-zero-api:
+    build:
+      context: ./daedalos-integration
+      dockerfile: Dockerfile
+    container_name: agent-zero-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AGENT_ZERO_HOME=/home/agent-zero
+      - AGENT_ZERO_PORT=8000
+      - LOG_LEVEL=INFO
+    volumes:
+      - agent-zero-data:/home/agent-zero
+      - ./daedalos-integration:/app
+    networks:
+      - agent-zero-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: python main.py
+
+  # Optional: Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: agent-zero-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - agent-zero-network
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  daedalos-data:
+    driver: local
+  agent-zero-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  agent-zero-network:
+    driver: bridge
