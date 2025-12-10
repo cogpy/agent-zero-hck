@@ -1,0 +1,129 @@
+# Agent-Zero-HCK Docker Compose
+# Full stack deployment with optional services
+
+version: '3.8'
+
+services:
+  # Main Agent-Zero-HCK service
+  agent-zero-hck:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent-zero-hck
+    hostname: toga-hck
+    environment:
+      # Agent configuration
+      - AGENT_NAME=Toga-HCK
+      - AGENT_ROLE=Advanced Security Research Agent with Cheerful Chaos
+      
+      # Personality configuration
+      - TOGA_CHEERFULNESS=0.95
+      - TOGA_CHAOS=0.95
+      - TOGA_OBSESSIVENESS=0.90
+      
+      # Feature flags
+      - ENABLE_TRANSFORM_QUIRK=true
+      - ENABLE_SECURITY_TESTING=true
+      - ENABLE_NPU=false
+      - ENABLE_ATOMSPACE=false
+      - ENABLE_ONTOGENESIS=false
+      
+      # Security settings
+      - ETHICAL_TESTING_ONLY=true
+      - RESPECT_BOUNDARIES=0.95
+      
+      # Daedalos integration
+      - DAEDALOS_ENABLED=false
+      - DAEDALOS_ENDPOINT=http://daedalos-api:8080
+      - DAEDALOS_AUTH_TOKEN=${DAEDALOS_AUTH_TOKEN:-}
+      
+      # Database (if AtomSpace enabled)
+      - ATOMSPACE_URI=postgresql://atomspace:atomspace@atomspace-db:5432/atomspace
+      
+      # Logging
+      - LOG_LEVEL=INFO
+      
+    volumes:
+      - ./logs:/app/logs
+      - ./memory:/app/memory
+      - ./models:/app/models:ro
+      - ./config:/app/config:ro
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    networks:
+      - agent-network
+    restart: unless-stopped
+    depends_on:
+      - atomspace-db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # PostgreSQL for AtomSpace (optional)
+  atomspace-db:
+    image: postgres:15-alpine
+    container_name: atomspace-db
+    environment:
+      - POSTGRES_DB=atomspace
+      - POSTGRES_USER=atomspace
+      - POSTGRES_PASSWORD=atomspace
+    volumes:
+      - atomspace-data:/var/lib/postgresql/data
+    networks:
+      - agent-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atomspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - atomspace  # Only start if atomspace profile is active
+
+  # NPU Service (optional - for GGUF model serving)
+  npu-service:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    container_name: npu-service
+    command: 
+      - "--model"
+      - "/models/mistral-7b-instruct.gguf"
+      - "--ctx-size"
+      - "4096"
+      - "--threads"
+      - "8"
+      - "--port"
+      - "8000"
+    volumes:
+      - ./models:/models:ro
+    networks:
+      - agent-network
+    restart: unless-stopped
+    profiles:
+      - npu  # Only start if npu profile is active
+
+  # Daedalos Mock API (for testing)
+  daedalos-api:
+    image: mockserver/mockserver:latest
+    container_name: daedalos-api
+    environment:
+      - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/daedalos-mock.json
+    volumes:
+      - ./config/daedalos-mock.json:/config/daedalos-mock.json:ro
+    ports:
+      - "1080:1080"
+    networks:
+      - agent-network
+    profiles:
+      - daedalos  # Only start if daedalos profile is active
+
+networks:
+  agent-network:
+    driver: bridge
+
+volumes:
+  atomspace-data:
+    driver: local

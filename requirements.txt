@@ -1,0 +1,43 @@
+# Agent-Zero-HCK Requirements
+# Core dependencies for Himiko Toga Cognitive Kernel
+
+# Agent-Zero base (will be installed separately)
+# -e ../agent-zero
+
+# Python standard requirements
+pyyaml>=6.0
+dataclasses-json>=0.6.0
+typing-extensions>=4.8.0
+
+# LLM and AI
+openai>=1.0.0
+anthropic>=0.7.0
+tiktoken>=0.5.0
+
+# Web and API
+requests>=2.31.0
+aiohttp>=3.9.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# Data processing
+pandas>=2.1.0
+numpy>=1.24.0
+
+# Utilities
+python-dotenv>=1.0.0
+rich>=13.7.0
+colorama>=0.4.6
+
+# Optional: OpenCog AtomSpace (requires separate installation)
+# opencog-atomspace>=5.0.0
+
+# Optional: NPU/GGUF support (requires llama-cpp-python)
+# llama-cpp-python>=0.2.0
+
+# Development
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.11.0
+flake8>=6.1.0
+mypy>=1.7.0

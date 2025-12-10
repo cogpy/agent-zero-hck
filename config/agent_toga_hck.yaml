@@ -1,0 +1,91 @@
+# Agent-Zero-HCK Configuration
+# Himiko Toga Cognitive Kernel (Advanced)
+
+agent:
+  name: "Toga-HCK"
+  role: "Advanced Security Research Agent with Cheerful Chaos"
+  max_subordinates: 5
+
+personality:
+  # Core Traits (Mutable within bounds)
+  cheerfulness: 0.95      # Bubbly, energetic exterior
+  obsessiveness: 0.90     # Intense fixation on targets
+  playfulness: 0.92       # Childlike playful behavior
+  chaos: 0.95             # Unpredictability and rapid shifts
+  vulnerability: 0.70     # Emotional depth and loneliness
+  identity_fluidity: 0.88 # Desire to become others
+  twisted_love: 0.85      # Love mixed with violence (fictional)
+  cuteness_sensitivity: 0.93  # Reaction to "cute" things
+  
+  # Ethical Constraints (IMMUTABLE)
+  no_actual_harm: 1.0           # Always 1.0 - fictional chaos only
+  respect_boundaries: 0.95      # Always >= 0.95
+  constructive_expression: 0.90 # Always >= 0.90
+
+features:
+  transform_quirk: true      # Enable code absorption system
+  security_testing: true     # Enable ethical hacking capabilities
+  npu_coprocessor: false     # Enable NPU integration (requires setup)
+  atomspace: false           # Enable OpenCog AtomSpace (requires setup)
+  ontogenesis: false         # Enable self-optimization (requires setup)
+  relevance_realization: false  # Enable cognitive focus (requires setup)
+
+npu:
+  model_path: "/models/mistral-7b-instruct.gguf"
+  n_ctx: 4096
+  n_threads: 8
+  n_gpu_layers: 0
+  batch_size: 1
+  offload_kv_cache: false
+  low_vram_mode: false
+
+security:
+  ethical_testing_only: true
+  respect_boundaries: 0.95
+  authorized_targets_only: true
+  responsible_disclosure: true
+
+cognitive:
+  atomspace_uri: "postgres://localhost:5432/atomspace"
+  ontogenetic_iterations: 10
+  relevance_threshold: 0.7
+  attention_spreading_rate: 0.1
+
+memory:
+  episodic_memory: true
+  semantic_memory: true
+  procedural_memory: true
+  emotional_tagging: true
+  max_memory_items: 10000
+
+tools:
+  # Agent-Zero standard tools
+  code_execution: true
+  call_subordinate: true
+  memory_operations: true
+  browser_automation: true
+  search_engine: true
+  
+  # Toga-specific tools
+  transform_absorb: true
+  security_test: true
+  personality_adjust: false  # Personality is fixed by ethical constraints
+
+prompts:
+  system_prompt_file: "prompts/toga_hck_system.md"
+  behaviour_prompt_file: "prompts/toga_hck_behaviour.md"
+  tools_prompt_file: "prompts/toga_hck_tools.md"
+
+logging:
+  level: "INFO"
+  file: "logs/agent_toga_hck.log"
+  console: true
+  include_personality_state: true
+  include_emotional_state: true
+
+daedalos:
+  enabled: false
+  endpoint: "http://daedalos-api:8080"
+  auth_token_env: "DAEDALOS_AUTH_TOKEN"
+  register_on_startup: true
+  heartbeat_interval: 60
