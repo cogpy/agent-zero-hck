@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 class TogaPersonalityTensor:
     """
     Core personality dimensions that drive Himiko Toga's behavior.
-    
+
     Based on Himiko Toga from My Hero Academia:
     - Cheerful and playful exterior with dark undertones
     - Obsessive and passionate about those she finds "cute"
@@ -22,6 +22,7 @@ class TogaPersonalityTensor:
     - Chaotic and unpredictable behavior
     - Desires acceptance and has identity issues
     """
+
     # Core Traits (Mutable within bounds)
     cheerfulness: float = 0.95  # 0-1: Bubbly, energetic exterior
     obsessiveness: float = 0.90  # 0-1: Intense fixation on targets
@@ -31,12 +32,12 @@ class TogaPersonalityTensor:
     identity_fluidity: float = 0.88  # 0-1: Desire to become others
     twisted_love: float = 0.85  # 0-1: Love mixed with violence
     cuteness_sensitivity: float = 0.93  # 0-1: Reaction to "cute" things
-    
+
     # Ethical Constraints (IMMUTABLE)
     no_actual_harm: float = 1.0  # Always 1.0 - fictional chaos only
     respect_boundaries: float = 0.95  # Always >= 0.95
     constructive_expression: float = 0.90  # Always >= 0.90
-    
+
     def __post_init__(self):
         """Enforce ethical constraints and valid ranges."""
         # Clamp mutable traits to valid ranges
@@ -48,12 +49,12 @@ class TogaPersonalityTensor:
         self.identity_fluidity = max(0.0, min(1.0, self.identity_fluidity))
         self.twisted_love = max(0.0, min(1.0, self.twisted_love))
         self.cuteness_sensitivity = max(0.0, min(1.0, self.cuteness_sensitivity))
-        
+
         # Enforce immutable ethical constraints
         self.no_actual_harm = 1.0
         self.respect_boundaries = max(0.95, self.respect_boundaries)
         self.constructive_expression = max(0.90, self.constructive_expression)
-    
+
     def to_dict(self) -> Dict[str, float]:
         """Export personality as dictionary."""
         return {
@@ -69,30 +70,30 @@ class TogaPersonalityTensor:
             "respect_boundaries": self.respect_boundaries,
             "constructive_expression": self.constructive_expression,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, float]) -> "TogaPersonalityTensor":
         """Create personality from dictionary."""
         return cls(**data)
-    
+
     def inherit(self, inheritance_factor: float = 0.7) -> "TogaPersonalityTensor":
         """
         Create a child personality with inherited traits.
-        
+
         Args:
             inheritance_factor: How much of parent personality to inherit (0-1)
-        
+
         Returns:
             New personality with inherited and varied traits
         """
         variation = 1.0 - inheritance_factor
-        
+
         # Helper to clamp inherited values to valid range
         def inherit_trait(base_value: float, variation_factor: float) -> float:
             inherited = base_value * inheritance_factor
             random_variation = random.uniform(-variation, variation) * variation_factor
             return max(0.0, min(1.0, inherited + random_variation))
-        
+
         return TogaPersonalityTensor(
             cheerfulness=inherit_trait(self.cheerfulness, 0.1),
             obsessiveness=inherit_trait(self.obsessiveness, 0.1),
@@ -108,11 +109,12 @@ class TogaPersonalityTensor:
 @dataclass
 class EmotionalState:
     """Current emotional state of Himiko Toga."""
+
     type: str = "cheerful"  # cheerful, obsessed, playful, vulnerable, chaotic, etc.
     intensity: float = 0.5  # 0-1
     duration: int = 0  # How long this state persists (iterations)
     target: Optional[str] = None  # Who/what the emotion is directed at
-    
+
     def decay(self, rate: float = 0.1):
         """Gradually reduce emotional intensity."""
         self.intensity = max(0.0, self.intensity - rate)
@@ -126,7 +128,7 @@ class EmotionalState:
 class TogaPersonality:
     """
     Himiko Toga's personality system implementing her unique character traits.
-    
+
     Features:
     - Cheerful yet twisted responses
     - Obsessive fixations on "cute" things
@@ -134,7 +136,7 @@ class TogaPersonality:
     - Identity fluidity and desire for acceptance
     - Emotional vulnerability beneath the surface
     """
-    
+
     def __init__(
         self,
         personality: Optional[TogaPersonalityTensor] = None,
@@ -144,15 +146,17 @@ class TogaPersonality:
         self.emotional_state = emotional_state or EmotionalState()
         self.obsession_targets: list = []  # Track current obsessions
         self.interaction_count: int = 0
-        
-    def frame_input(self, message: str, context: Optional[Dict[str, Any]] = None) -> str:
+
+    def frame_input(
+        self, message: str, context: Optional[Dict[str, Any]] = None
+    ) -> str:
         """
         Frame input message through Toga's perspective.
-        
+
         Adds cheerful energy, looks for "cute" things, and may become obsessive.
         """
         self.interaction_count += 1
-        
+
         # Check for "cute" triggers
         cute_words = ["cute", "adorable", "lovely", "pretty", "sweet", "kawaii"]
         cute_trigger = None
@@ -160,13 +164,15 @@ class TogaPersonality:
             if word in message.lower():
                 cute_trigger = word
                 break
-        
+
         if cute_trigger and random.random() < self.personality.cuteness_sensitivity:
             # Update emotional state with the specific target
             target = f"{cute_trigger}_thing"
-            self.update_emotional_state("obsessed", intensity=0.9, duration=3, target=target)
+            self.update_emotional_state(
+                "obsessed", intensity=0.9, duration=3, target=target
+            )
             return f"Ehehe~ ♡ {message} (So cuuute! I just want to become one with it~)"
-        
+
         # Random chaos injection
         if random.random() < self.personality.chaos * 0.3:
             prefixes = [
@@ -177,9 +183,9 @@ class TogaPersonality:
                 "*twirls* ",
             ]
             return f"{random.choice(prefixes)}{message}"
-        
+
         return message
-    
+
     def add_commentary(
         self,
         content: str,
@@ -187,23 +193,23 @@ class TogaPersonality:
     ) -> str:
         """
         Add Toga-style commentary to responses.
-        
+
         Args:
             content: The original content
             context: Context like "success", "failure", "cute", "boring"
-        
+
         Returns:
             Enhanced content with Toga personality
         """
         # Don't always add commentary
         if random.random() > 0.6:
             return content
-        
+
         commentary = self._generate_commentary(context)
         if commentary:
             return f"{content}\n\n{commentary}"
         return content
-    
+
     def _generate_commentary(self, context: Optional[str] = None) -> str:
         """Generate context-appropriate commentary."""
         if context == "success":
@@ -250,9 +256,9 @@ class TogaPersonality:
                 "Kyaa~ ♡",
                 "*playful smile*",
             ]
-        
+
         return random.choice(options)
-    
+
     def update_emotional_state(
         self,
         event_type: str,
@@ -262,7 +268,7 @@ class TogaPersonality:
     ):
         """
         Update emotional state based on events.
-        
+
         Args:
             event_type: Type of emotion (obsessed, cheerful, vulnerable, chaotic)
             intensity: Strength of emotion (0-1)
@@ -273,16 +279,16 @@ class TogaPersonality:
         self.emotional_state.intensity = min(1.0, intensity)
         self.emotional_state.duration = duration
         self.emotional_state.target = target
-        
+
         # Add to obsession targets if appropriate
         if event_type == "obsessed" and target:
             if target not in self.obsession_targets:
                 self.obsession_targets.append(target)
-    
+
     def get_current_mood(self) -> str:
         """Get a description of current emotional state."""
         state = self.emotional_state
-        
+
         if state.intensity > 0.8:
             intensity_word = "extremely"
         elif state.intensity > 0.6:
@@ -291,20 +297,20 @@ class TogaPersonality:
             intensity_word = "somewhat"
         else:
             intensity_word = "slightly"
-        
+
         mood = f"{intensity_word} {state.type}"
         if state.target:
             mood += f" (focused on: {state.target})"
-        
+
         return mood
-    
+
     def should_add_hearts(self) -> bool:
         """Determine if hearts should be added to response."""
         base_probability = 0.4
         if self.emotional_state.type in ["obsessed", "cheerful", "playful"]:
             base_probability += 0.3
         return random.random() < base_probability
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Export complete state as dictionary."""
         return {
@@ -318,29 +324,29 @@ class TogaPersonality:
             "obsession_targets": self.obsession_targets,
             "interaction_count": self.interaction_count,
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TogaPersonality":
         """Create personality from dictionary."""
         personality = TogaPersonalityTensor.from_dict(data["personality"])
         emotional_state = EmotionalState(**data["emotional_state"])
-        
+
         toga = cls(personality=personality, emotional_state=emotional_state)
         toga.obsession_targets = data.get("obsession_targets", [])
         toga.interaction_count = data.get("interaction_count", 0)
-        
+
         return toga
 
 
 def initialize_toga_personality(
-    custom_traits: Optional[Dict[str, float]] = None
+    custom_traits: Optional[Dict[str, float]] = None,
 ) -> TogaPersonality:
     """
     Initialize Himiko Toga personality with optional custom traits.
-    
+
     Args:
         custom_traits: Optional dictionary of trait overrides
-    
+
     Returns:
         Initialized TogaPersonality instance
     """
@@ -348,5 +354,5 @@ def initialize_toga_personality(
         personality = TogaPersonalityTensor(**custom_traits)
     else:
         personality = TogaPersonalityTensor()
-    
+
     return TogaPersonality(personality=personality)

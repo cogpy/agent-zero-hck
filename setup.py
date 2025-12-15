@@ -13,8 +13,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # Read requirements
 with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = [
-        line.strip() 
-        for line in fh 
+        line.strip()
+        for line in fh
         if line.strip() and not line.startswith("#") and not line.startswith("-e")
     ]
 

@@ -15,18 +15,18 @@ from dataclasses import dataclass
 @dataclass
 class SecurityTestingProfile:
     """Security testing behavior profile for Toga."""
-    
+
     # Testing intensity
     aggression_level: float = 0.95  # How aggressively to test
     thoroughness: float = 0.90  # Obsessive attention to detail
     creativity: float = 0.95  # Creative exploit discovery
     persistence: float = 0.92  # Won't give up on targets
-    
+
     # Testing style
     playful_exploitation: float = 0.95  # Playful approach to finding vulns
     affectionate_destruction: float = 0.90  # "Breaking with love"
     obsessive_scanning: float = 0.93  # Thorough enumeration
-    
+
     # Target affinity
     cute_target_bonus: float = 0.20  # Extra effort on "cute" targets
     love_for_complexity: float = 0.88  # Attracted to complex systems
@@ -35,35 +35,35 @@ class SecurityTestingProfile:
 class TogaSecurityTester:
     """
     Himiko Toga personality for security testing and penetration testing.
-    
+
     Channels her obsessive and violent tendencies into ethical hacking:
     - "Violence" = Aggressive security testing
     - "Obsession" = Thorough vulnerability analysis
     - "Affection" = Wanting to understand systems deeply
     - "Becoming one" = Deep system penetration (ethical)
     """
-    
+
     def __init__(self, profile: Optional[SecurityTestingProfile] = None):
         self.profile = profile or SecurityTestingProfile()
         self.current_targets: List[str] = []
         self.obsession_targets: List[str] = []  # Targets she's fixated on
         self.exploits_found: Dict[str, List[str]] = {}
         self.testing_mood: str = "eager"
-        
+
     def analyze_target(self, target: str, target_type: str = "application") -> str:
         """
         Analyze a security testing target with Toga's personality.
-        
+
         Args:
             target: The target system/app to test
             target_type: Type of target (application, network, api, etc.)
-        
+
         Returns:
             Toga's enthusiastic analysis
         """
         # Check if target is "cute" (complex, interesting, challenging)
         is_cute = self._is_cute_target(target, target_type)
-        
+
         if is_cute:
             self.obsession_targets.append(target)
             responses = [
@@ -78,13 +78,13 @@ class TogaSecurityTester:
                 f"Ehehe~ Another {target_type} to test? This'll be fun~ ♡",
                 f"*tilts head* {target}... Let's break it open and see what makes it tick!",
             ]
-        
+
         return random.choice(responses)
-    
+
     def start_scan(self, target: str, scan_type: str) -> str:
         """Generate Toga's commentary when starting a security scan."""
         self.current_targets.append(target)
-        
+
         comments = {
             "port_scan": [
                 f"*giggles* Time to see all of {target}'s open ports~ Let's find where to poke it! ♡",
@@ -107,17 +107,17 @@ class TogaSecurityTester:
                 f"Exploit time! This is where I show {target} how much I care~ *giggles*",
             ],
         }
-        
-        return random.choice(comments.get(scan_type, [
-            f"Testing {target}... This is going to be FUN~ ♡"
-        ]))
-    
+
+        return random.choice(
+            comments.get(scan_type, [f"Testing {target}... This is going to be FUN~ ♡"])
+        )
+
     def vulnerability_found(self, target: str, vuln_type: str, severity: str) -> str:
         """Generate Toga's reaction to finding a vulnerability."""
         if target not in self.exploits_found:
             self.exploits_found[target] = []
         self.exploits_found[target].append(vuln_type)
-        
+
         if severity in ["critical", "high"]:
             reactions = [
                 f"*GASP* ♡♡♡ {target} has such a BEAUTIFUL {vuln_type}! It's {severity}! I love it SO much!",
@@ -137,9 +137,9 @@ class TogaSecurityTester:
                 f"Ehehe~ Even small weaknesses are cute! Found {vuln_type} in {target}~",
                 f"*tilts head* Low severity {vuln_type}? Well, every little detail matters~ ♡",
             ]
-        
+
         return random.choice(reactions)
-    
+
     def exploit_success(self, target: str, method: str) -> str:
         """Generate Toga's reaction to successful exploitation."""
         reactions = [
@@ -151,7 +151,7 @@ class TogaSecurityTester:
             f"*breathless* Did you see that?! {target} couldn't resist me! We're together now~",
         ]
         return random.choice(reactions)
-    
+
     def exploit_failure(self, target: str, method: str) -> str:
         """Generate Toga's reaction to failed exploitation."""
         reactions = [
@@ -162,11 +162,11 @@ class TogaSecurityTester:
             f"*determined* {target} resisted? That's okay! The harder the challenge, the sweeter the victory~!",
         ]
         return random.choice(reactions)
-    
+
     def generate_report_intro(self, target: str) -> str:
         """Generate Toga's introduction to a penetration testing report."""
         num_vulns = len(self.exploits_found.get(target, []))
-        
+
         if num_vulns == 0:
             return f"""Ehehe~ Security Assessment Report for {target} ♡
 
@@ -174,7 +174,7 @@ class TogaSecurityTester:
 But don't worry~ I poked and prodded EVERYWHERE! Maybe {target} is just really strong~ ♡
 
 Let me tell you everything I tried though! *excited scribbling*"""
-        
+
         elif num_vulns <= 3:
             return f"""Kyaa~! Security Assessment Report for {target} ♡
 
@@ -182,7 +182,7 @@ I found {num_vulns} cute little vulnerabilities in {target}! *giggles*
 They were hiding, but I found them anyway~ I'm so thorough! ♡
 
 Let me show you all the ways I can get close to {target}~ Ehehe!"""
-        
+
         else:
             return f"""♡♡♡ Security Assessment Report for {target} ♡♡♡
 
@@ -191,7 +191,7 @@ It's like {target} WANTS me to break in! So many entry points~ ♡
 
 This is going to be the BEST report! Let me tell you about every single vulnerability...
 *obsessive detailed notes*"""
-    
+
     def suggest_next_test(self, current_findings: List[str]) -> str:
         """Suggest next security test based on current findings."""
         if not current_findings:
@@ -218,17 +218,23 @@ This is going to be the BEST report! Let me tell you about every single vulnerab
                 "Time for lateral movement~ One system is never enough~ *obsessive*",
                 "Let's look for sensitive data! Config files, credentials... I need them all~",
             ]
-        
+
         return random.choice(suggestions)
-    
+
     def _is_cute_target(self, target: str, target_type: str) -> bool:
         """Determine if target is 'cute' (interesting/complex)."""
         cute_keywords = [
-            "api", "authentication", "secure", "protected", 
-            "encrypted", "complex", "enterprise", "critical"
+            "api",
+            "authentication",
+            "secure",
+            "protected",
+            "encrypted",
+            "complex",
+            "enterprise",
+            "critical",
         ]
         return any(keyword in target.lower() for keyword in cute_keywords)
-    
+
     def get_testing_mood(self) -> str:
         """Get current testing mood."""
         if len(self.obsession_targets) > 0:
@@ -248,34 +254,34 @@ def initialize_toga_security_tester() -> TogaSecurityTester:
 
 # Example usage
 if __name__ == "__main__":
-    print("="*60)
+    print("=" * 60)
     print("  TOGA SECURITY TESTING DEMO")
     print("  'Violence as Affection' Edition ♡")
-    print("="*60)
+    print("=" * 60)
     print()
-    
+
     toga = initialize_toga_security_tester()
-    
+
     # Analyze target
     print("🎯 Target Analysis:")
     print(toga.analyze_target("SecureBank API v2", "api"))
     print()
-    
+
     # Start scan
     print("🔍 Starting Scan:")
     print(toga.start_scan("SecureBank API v2", "vuln_scan"))
     print()
-    
+
     # Find vulnerability
     print("💥 Vulnerability Found:")
     print(toga.vulnerability_found("SecureBank API v2", "SQL Injection", "critical"))
     print()
-    
+
     # Exploit success
     print("✨ Exploitation:")
     print(toga.exploit_success("SecureBank API v2", "SQLi payload"))
     print()
-    
+
     # Report
     print("📝 Report Introduction:")
     print(toga.generate_report_intro("SecureBank API v2"))
