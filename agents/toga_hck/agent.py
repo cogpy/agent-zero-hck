@@ -539,3 +539,13 @@ if __name__ == "__main__":
     # Final status
     print("=== Final Status ===")
     print(agent.get_status())
+
+
+def main():
+    """Main entry point for command-line execution"""
+    print("╔═══════════════════════════════════════════════════════════════╗")
+    print("║     Agent-Zero-HCK - Himiko Toga Cognitive Kernel (Advanced)  ║")
+    print("╚═══════════════════════════════════════════════════════════════╝")
+    print()
+    test_agent_zero_hck()
+    return 0

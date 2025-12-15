@@ -1,0 +1,22 @@
+include README.md
+include LICENSE
+include requirements.txt
+include ARCHITECTURE.md
+include DEPLOYMENT.md
+include IMPLEMENTATION_SUMMARY.md
+
+recursive-include config *.yaml *.yml
+recursive-include prompts *.md *.txt
+recursive-include agents *.py
+recursive-include python *.py
+
+exclude .env
+exclude .env.*
+recursive-exclude tests *
+recursive-exclude docs *
+recursive-exclude logs *
+recursive-exclude memory *
+recursive-exclude models *
+recursive-exclude tmp *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
