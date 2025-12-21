@@ -277,11 +277,16 @@ jobs:
           LOG_LEVEL=DEBUG
           EOF
 
+      - name: Pull Docker image from registry
+        run: |
+          # Use the pre-built image from the registry instead of building locally
+          docker pull ghcr.io/cogpy/agent-zero-hck:latest || echo "Image not available, will build locally"
+
       - name: Run Docker Compose
         run: |
-          docker compose build
-          docker compose up -d
-          sleep 10
+          # Build only if image not available from registry
+          docker compose up -d --build
+          sleep 15
 
       - name: Check service health
         run: |
