@@ -54,8 +54,7 @@ services:
     networks:
       - agent-network
     restart: unless-stopped
-    depends_on:
-      - atomspace-db
+    # depends_on removed - atomspace-db is optional (profiles: atomspace)
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
       interval: 30s

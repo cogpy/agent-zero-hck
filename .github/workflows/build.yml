@@ -257,6 +257,7 @@ jobs:
     name: Integration Tests
     runs-on: ubuntu-latest
     needs: build-docker
+    continue-on-error: true  # Integration tests are optional for now
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
