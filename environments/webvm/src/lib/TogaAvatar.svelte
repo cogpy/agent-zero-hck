@@ -1,12 +1,14 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
+  import { MockLive2DModel, applyEmotion } from './live2d-mock.js';
   
   // Props
   export let apiKey = 'dev-key';
   export let apiBaseUrl = '/api/avatar';
   export let visible = true;
   export let position = 'bottom-right'; // bottom-right, bottom-left, top-right, top-left
+  export let enableMockRenderer = true; // Use mock renderer for demonstration
   
   // State
   let sessionId = null;
@@ -20,6 +22,9 @@
   // Avatar container
   let avatarContainer;
   let canvas;
+  let live2dModel = null;
+  let animationFrameId = null;
+  let lastFrameTime = 0;
   
   /**
    * Initialize the Avatar API session
@@ -37,6 +42,10 @@
         }),
       });
       
+      if (!response.ok) {
+        throw new Error(`Failed to create session: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       sessionId = data.session_id;
       console.log('✅ Session created:', sessionId);
@@ -45,6 +54,8 @@
       connectWebSocket();
     } catch (error) {
       console.error('❌ Failed to create session:', error);
+      // Continue with mock mode even if API is unavailable
+      console.log('📝 Running in demo mode without API');
     }
   }
   
@@ -54,36 +65,40 @@
   function connectWebSocket() {
     if (!sessionId) return;
     
-    const wsUrl = new URL(`${apiBaseUrl}/ws/${sessionId}`, window.location.href);
-    wsUrl.protocol = wsUrl.protocol.replace('http', 'ws');
-    wsUrl.searchParams.set('api_key', apiKey);
-    
-    ws = new WebSocket(wsUrl.href);
-    
-    ws.onopen = () => {
-      console.log('🔌 WebSocket connected');
-      isConnected = true;
+    try {
+      const wsUrl = new URL(`${apiBaseUrl}/ws/${sessionId}`, window.location.href);
+      wsUrl.protocol = wsUrl.protocol.replace('http', 'ws');
+      wsUrl.searchParams.set('api_key', apiKey);
       
-      // Start ping interval
-      pingInterval = setInterval(() => {
-        sendMessage('ping', {});
-      }, 30000);
-    };
-    
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      handleWebSocketMessage(message);
-    };
-    
-    ws.onclose = () => {
-      console.log('🔌 WebSocket disconnected');
-      isConnected = false;
-      clearInterval(pingInterval);
-    };
-    
-    ws.onerror = (error) => {
-      console.error('❌ WebSocket error:', error);
-    };
+      ws = new WebSocket(wsUrl.href);
+      
+      ws.onopen = () => {
+        console.log('🔌 WebSocket connected');
+        isConnected = true;
+        
+        // Start ping interval
+        pingInterval = setInterval(() => {
+          sendMessage('ping', {});
+        }, 30000);
+      };
+      
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        handleWebSocketMessage(message);
+      };
+      
+      ws.onclose = () => {
+        console.log('🔌 WebSocket disconnected');
+        isConnected = false;
+        clearInterval(pingInterval);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+      };
+    } catch (error) {
+      console.error('❌ Failed to connect WebSocket:', error);
+    }
   }
   
   /**
@@ -156,48 +171,122 @@
       text: message,
     }];
     
-    sendMessage('chat', { message });
+    if (isConnected) {
+      sendMessage('chat', { message });
+    } else {
+      // Demo mode: simulate response
+      simulateDemoResponse(message);
+    }
+  }
+  
+  /**
+   * Simulate a demo response (when API is unavailable)
+   */
+  function simulateDemoResponse(message) {
+    setTimeout(() => {
+      const responses = [
+        "Hey hey! I'm Toga! This is a demo mode!",
+        "Wow, that's so cool! I love it!",
+        "Hehe, you're making me blush! 💕",
+        "Let's have some fun together!",
+        "I'm so excited to talk to you!",
+      ];
+      
+      const response = responses[Math.floor(Math.random() * responses.length)];
+      
+      chatHistory = [...chatHistory, {
+        sender: 'Toga',
+        text: response,
+      }];
+      
+      // Trigger random emotion
+      const emotions = ['happy', 'excited', 'playful', 'shy'];
+      const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+      updateAvatarEmotion({ emotion: randomEmotion, intensity: 0.8 });
+      
+      // Trigger random animation
+      const animations = ['wave', 'bounce', 'nod'];
+      const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
+      playAnimation({ animation: randomAnimation, intensity: 0.7 });
+    }, 500);
   }
   
   /**
    * Update avatar emotion
    */
   function updateAvatarEmotion(emotionData) {
-    // This would update the Live2D model parameters
-    // For now, we'll just log it
-    console.log('😊 Emotion update:', emotionData);
+    const { emotion, intensity = 0.8 } = emotionData;
     
-    // TODO: Implement Live2D parameter updates
-    // Example:
-    // live2dModel.setParameterValue('ParamMouthForm', emotionData.parameters.ParamMouthForm);
+    console.log('😊 Emotion update:', emotion, intensity);
+    
+    if (live2dModel) {
+      applyEmotion(live2dModel, emotion, intensity);
+    }
   }
   
   /**
    * Play an animation
    */
   function playAnimation(animationData) {
-    // This would trigger a Live2D animation
-    console.log('🎬 Animation:', animationData);
+    const { animation, intensity = 0.7, duration_ms = 1000 } = animationData;
     
-    // TODO: Implement Live2D animation playback
-    // Example:
-    // live2dModel.playMotion(animationData.animation, animationData.intensity);
+    console.log('🎬 Animation:', animation, intensity);
+    
+    if (live2dModel) {
+      live2dModel.playAnimation(animation, intensity, duration_ms);
+    }
   }
   
   /**
    * Initialize the Live2D model
    */
-  function initializeLive2D() {
-    // TODO: Implement Live2D model loading
-    // This is a placeholder for the actual Live2D integration
+  async function initializeLive2D() {
+    if (!canvas) {
+      console.error('Canvas not ready');
+      return;
+    }
     
-    console.log('🎨 Live2D initialization placeholder');
+    console.log('🎨 Initializing Live2D...');
     
-    // Example implementation would be:
-    // 1. Load Live2D Cubism Core
-    // 2. Load the model JSON
-    // 3. Initialize the renderer
-    // 4. Start the update loop
+    if (enableMockRenderer) {
+      // Use mock renderer for demonstration
+      live2dModel = new MockLive2DModel(canvas);
+      await live2dModel.load('/models/toga/toga.model3.json');
+      
+      // Set initial emotion
+      applyEmotion(live2dModel, currentEmotion, 0.8);
+      
+      // Start render loop
+      startRenderLoop();
+      
+      console.log('✅ Mock Live2D initialized');
+    } else {
+      // TODO: Implement actual Live2D SDK integration
+      console.warn('⚠️ Real Live2D SDK not implemented yet');
+    }
+  }
+  
+  /**
+   * Start the rendering loop
+   */
+  function startRenderLoop() {
+    const render = (timestamp) => {
+      if (!live2dModel) return;
+      
+      const deltaTime = timestamp - lastFrameTime;
+      lastFrameTime = timestamp;
+      
+      // Update model
+      live2dModel.update(deltaTime);
+      
+      // Render model
+      live2dModel.render();
+      
+      // Continue loop
+      animationFrameId = requestAnimationFrame(render);
+    };
+    
+    animationFrameId = requestAnimationFrame(render);
   }
   
   let pingInterval;
@@ -216,6 +305,9 @@
     if (pingInterval) {
       clearInterval(pingInterval);
     }
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+    }
   });
   
   // Position classes
@@ -225,6 +317,15 @@
     'top-right': 'top-4 right-4',
     'top-left': 'top-4 left-4',
   };
+  
+  // Demo controls
+  function testEmotion(emotion) {
+    updateAvatarEmotion({ emotion, intensity: 0.8 });
+  }
+  
+  function testAnimation(animation) {
+    playAnimation({ animation, intensity: 0.7, duration_ms: 1000 });
+  }
 </script>
 
 {#if visible}
@@ -244,8 +345,8 @@
       <!-- Status indicator -->
       <div class="absolute top-2 right-2">
         <div 
-          class="w-3 h-3 rounded-full {isConnected ? 'bg-green-500' : 'bg-red-500'}"
-          title={isConnected ? 'Connected' : 'Disconnected'}
+          class="w-3 h-3 rounded-full {isConnected ? 'bg-green-500' : 'bg-yellow-500'}"
+          title={isConnected ? 'Connected' : 'Demo Mode'}
         ></div>
       </div>
       
@@ -260,6 +361,30 @@
           Speaking...
         </div>
       {/if}
+    </div>
+    
+    <!-- Demo Controls -->
+    <div class="mt-2 bg-white rounded-lg shadow-lg p-3 max-w-sm">
+      <div class="text-xs font-bold mb-2">Demo Controls</div>
+      
+      <div class="mb-2">
+        <div class="text-xs mb-1">Emotions:</div>
+        <div class="flex flex-wrap gap-1">
+          <button on:click={() => testEmotion('happy')} class="px-2 py-1 bg-yellow-200 rounded text-xs">Happy</button>
+          <button on:click={() => testEmotion('excited')} class="px-2 py-1 bg-pink-200 rounded text-xs">Excited</button>
+          <button on:click={() => testEmotion('playful')} class="px-2 py-1 bg-purple-200 rounded text-xs">Playful</button>
+          <button on:click={() => testEmotion('shy')} class="px-2 py-1 bg-blue-200 rounded text-xs">Shy</button>
+        </div>
+      </div>
+      
+      <div>
+        <div class="text-xs mb-1">Animations:</div>
+        <div class="flex flex-wrap gap-1">
+          <button on:click={() => testAnimation('wave')} class="px-2 py-1 bg-green-200 rounded text-xs">Wave</button>
+          <button on:click={() => testAnimation('bounce')} class="px-2 py-1 bg-orange-200 rounded text-xs">Bounce</button>
+          <button on:click={() => testAnimation('nod')} class="px-2 py-1 bg-teal-200 rounded text-xs">Nod</button>
+        </div>
+      </div>
     </div>
     
     <!-- Current response bubble (if speaking) -->
@@ -285,5 +410,17 @@
   canvas {
     display: block;
     background: rgba(255, 255, 255, 0.1);
+  }
+  
+  button {
+    transition: transform 0.1s;
+  }
+  
+  button:hover {
+    transform: scale(1.05);
+  }
+  
+  button:active {
+    transform: scale(0.95);
   }
 </style>
