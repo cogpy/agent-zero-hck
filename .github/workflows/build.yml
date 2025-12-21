@@ -248,7 +248,8 @@ jobs:
 
       - name: Test Docker image
         run: |
-          docker run --rm ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} python3.11 -c "from agents.toga_hck import agent; print('Docker image test passed')"
+          # Use the main branch tag for testing
+          docker run --rm ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:main-${{ github.sha }} python3.11 -c "from agents.toga_hck import agent; print('Docker image test passed')"
 
   integration-test:
     name: Integration Tests
