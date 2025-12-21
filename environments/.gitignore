@@ -1,0 +1,40 @@
+# Node modules - will be installed during build
+daedalos/node_modules/
+webvm/node_modules/
+
+# Build outputs - generated during CI/CD
+daedalos/.next/
+daedalos/out/
+webvm/build/
+webvm/.svelte-kit/
+
+# Lock files - can be regenerated
+# Keep yarn.lock for DaedalOS reproducibility
+# Keep package-lock.json for WebVM reproducibility
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test outputs
+daedalos/coverage/
+webvm/coverage/
+daedalos/playwright-report/
+daedalos/test-results/
+
+# Environment files (use .env.example instead)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

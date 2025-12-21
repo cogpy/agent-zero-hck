@@ -340,21 +340,93 @@ jobs:
           echo "Docker image: ${{ env.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
           echo "Package artifacts available in dist/"
 
+  # Build DaedalOS Environment
+  build-daedalos:
+    name: Build DaedalOS
+    runs-on: ubuntu-latest
+    needs: test
+    continue-on-error: true  # Environment builds are optional
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+          cache-dependency-path: environments/daedalos/yarn.lock
+
+      - name: Install DaedalOS dependencies
+        working-directory: environments/daedalos
+        run: yarn install --frozen-lockfile
+
+      - name: Build DaedalOS
+        working-directory: environments/daedalos
+        run: yarn build
+        env:
+          AGENT_ZERO_API_URL: http://localhost:8000
+
+      - name: Upload DaedalOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: daedalos-build
+          path: environments/daedalos/out/
+          if-no-files-found: warn
+
+  # Build WebVM Environment
+  build-webvm:
+    name: Build WebVM
+    runs-on: ubuntu-latest
+    needs: test
+    continue-on-error: true  # Environment builds are optional
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: environments/webvm/package-lock.json
+
+      - name: Install WebVM dependencies
+        working-directory: environments/webvm
+        run: npm ci
+
+      - name: Build WebVM
+        working-directory: environments/webvm
+        run: npm run build
+        env:
+          VITE_AGENT_ZERO_API_URL: http://localhost:8000
+
+      - name: Upload WebVM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: webvm-build
+          path: environments/webvm/build/
+          if-no-files-found: warn
+
   summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [lint, test, build-package, build-docker, integration-test]
+    needs: [lint, test, build-package, build-docker, integration-test, build-daedalos, build-webvm]
     if: always()
     steps:
       - name: Check results
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ All build stages completed successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All build stages completed!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Stages:" >> $GITHUB_STEP_SUMMARY
+          echo "### Core Stages:" >> $GITHUB_STEP_SUMMARY
           echo "- Lint: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Test: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build Package: ${{ needs.build-package.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Build Docker: ${{ needs.build-docker.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Integration Test: ${{ needs.integration-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Environment Builds:" >> $GITHUB_STEP_SUMMARY
+          echo "- DaedalOS: ${{ needs.build-daedalos.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- WebVM: ${{ needs.build-webvm.result }}" >> $GITHUB_STEP_SUMMARY

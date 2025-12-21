@@ -416,6 +416,52 @@ docker-compose logs atomspace-db
 - **[Agent-Toga Docs](https://github.com/o9nn/agent-toga/tree/main/docs)**: Toga personality and Transform Quirk
 - **[Agent-Zero Docs](https://github.com/frdel/agent-zero/tree/main/docs)**: Multi-agent orchestration
 
+## Deployment Environments
+
+Agent-Zero HCK includes two pre-configured deployment environments:
+
+### DaedalOS (Desktop Environment)
+
+A web-based desktop environment with Live2D avatar integration.
+
+```bash
+cd environments
+./deploy.sh daedalos -d  # Development mode
+./deploy.sh daedalos -p  # Production build
+```
+
+**Features:**
+- Full desktop UI with file explorer, terminal, browser
+- Live2D Toga avatar with emotion states
+- Custom Toga Chat, Transform Quirk, and Security Tester apps
+- Toga-themed wallpapers and icons
+
+### WebVM (Virtual Machine)
+
+A browser-based Linux VM for terminal-based interaction.
+
+```bash
+cd environments
+./deploy.sh webvm -d  # Development mode
+./deploy.sh webvm -p  # Production build
+```
+
+**Features:**
+- Full Alpine Linux VM in the browser
+- Toga-themed terminal with custom prompt
+- Pre-installed Agent-Toga CLI tools
+- Live2D avatar overlay
+
+### Docker Compose (All Services)
+
+```bash
+cd environments
+docker compose up -d  # Start all services
+docker compose --profile with-proxy up -d  # With Traefik
+```
+
+See [environments/README.md](environments/README.md) for detailed documentation.
+
 ## License
 
 MIT License - See [LICENSE](LICENSE) file

@@ -1,0 +1,99 @@
+version: '3.8'
+
+# Agent-Toga Environment Docker Compose
+# Orchestrates DaedalOS and WebVM deployments
+
+services:
+  # DaedalOS Desktop Environment
+  daedalos:
+    build:
+      context: ./daedalos
+      dockerfile: Dockerfile
+    container_name: toga-daedalos
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - AGENT_ZERO_API_URL=http://agent-zero:8000
+      - AGENT_ZERO_WS_URL=ws://agent-zero:8000/api/v1/avatar/ws
+    volumes:
+      - daedalos-data:/app/public/Users/Toga
+    depends_on:
+      - agent-zero
+    networks:
+      - toga-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.daedalos.rule=Host(`desktop.toga.local`)"
+      - "traefik.http.services.daedalos.loadbalancer.server.port=3000"
+
+  # WebVM Virtual Machine Environment
+  webvm:
+    build:
+      context: ./webvm
+      dockerfile: Dockerfile.toga
+    container_name: toga-webvm
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_AGENT_ZERO_API_URL=http://agent-zero:8000
+      - VITE_AGENT_ZERO_WS_URL=ws://agent-zero:8000/api/v1/avatar/ws
+    volumes:
+      - webvm-data:/app/storage
+    depends_on:
+      - agent-zero
+    networks:
+      - toga-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webvm.rule=Host(`vm.toga.local`)"
+      - "traefik.http.services.webvm.loadbalancer.server.port=80"
+
+  # Agent-Zero Backend
+  agent-zero:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: toga-agent-zero
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LOG_LEVEL=INFO
+    volumes:
+      - agent-zero-data:/app/data
+    networks:
+      - toga-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/avatar/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Traefik Reverse Proxy (optional)
+  traefik:
+    image: traefik:v2.10
+    container_name: toga-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - toga-network
+    profiles:
+      - with-proxy
+
+networks:
+  toga-network:
+    driver: bridge
+
+volumes:
+  daedalos-data:
+  webvm-data:
+  agent-zero-data:
