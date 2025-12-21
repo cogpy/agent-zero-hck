@@ -44,7 +44,7 @@ async def detailed_status(
 
     Includes session counts and system information.
     """
-    active_sessions = await session_manager.get_active_count()
+    active_sessions = session_manager.get_active_session_count()
 
     return {
         "status": "healthy",
