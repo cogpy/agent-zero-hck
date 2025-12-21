@@ -359,12 +359,15 @@ jobs:
 
       - name: Install DaedalOS dependencies
         working-directory: environments/daedalos
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --ignore-scripts
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Build DaedalOS
         working-directory: environments/daedalos
         run: yarn build
         env:
+          NODE_OPTIONS: --openssl-legacy-provider
           AGENT_ZERO_API_URL: http://localhost:8000
 
       - name: Upload DaedalOS artifacts
