@@ -1,10 +1,16 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
-  import { Terminal } from '@xterm/xterm';
-  import { FitAddon } from '@xterm/addon-fit';
-  import { WebLinksAddon } from '@xterm/addon-web-links';
-  import '@xterm/xterm/css/xterm.css';
+  import { browser } from '$app/environment';
   import togaConfig from '../../toga.config.js';
+  
+  // Import xterm only on client side to avoid SSR issues
+  let Terminal, FitAddon, WebLinksAddon;
+  if (browser) {
+    import('@xterm/xterm').then(m => Terminal = m.Terminal);
+    import('@xterm/addon-fit').then(m => FitAddon = m.FitAddon);
+    import('@xterm/addon-web-links').then(m => WebLinksAddon = m.WebLinksAddon);
+    import('@xterm/xterm/css/xterm.css');
+  }
   
   export let configObj;
   export let processCallback = null;
@@ -29,6 +35,15 @@
   
   // Initialize terminal
   onMount(async () => {
+    // Wait for xterm modules to load
+    if (!Terminal || !FitAddon || !WebLinksAddon) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (!Terminal || !FitAddon || !WebLinksAddon) {
+        console.error('Failed to load xterm modules');
+        return;
+      }
+    }
+    
     // Create terminal instance
     terminal = new Terminal({
       cursorBlink: true,

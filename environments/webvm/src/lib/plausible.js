@@ -3,7 +3,12 @@
  * 
  * Provides privacy-friendly analytics tracking for WebVM
  * using Plausible Analytics (if configured)
+ * 
+ * Note: All functions handle SSR gracefully by checking for window/browser environment
  */
+
+// Browser detection helper
+const isBrowser = typeof window !== 'undefined';
 
 /**
  * Try to send an event to Plausible Analytics
@@ -11,9 +16,12 @@
  * @param {Object} props - Optional event properties
  */
 export function tryPlausible(eventName, props = {}) {
+  // Skip during SSR
+  if (!isBrowser) return;
+  
   try {
     // Check if Plausible is available
-    if (typeof window !== 'undefined' && window.plausible) {
+    if (window.plausible) {
       window.plausible(eventName, { props });
       console.log(`[Analytics] Event tracked: ${eventName}`, props);
     } else {
@@ -148,7 +156,8 @@ export function trackError(errorType, message) {
  * @param {Object} config - Configuration options
  */
 export function initializeAnalytics(config = {}) {
-  if (typeof window === 'undefined') return;
+  // Skip during SSR
+  if (!isBrowser) return;
   
   const {
     domain = window.location.hostname,
