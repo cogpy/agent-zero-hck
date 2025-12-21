@@ -47,3 +47,14 @@ instruments/**
 # Global rule to include .gitkeep files anywhere
 !**/.gitkeep
 agent_history.gif
+# Virtual environment
+venv/
+env/
+ENV/
+
+# Test artifacts
+*.tar.gz
+test_results/
+
+# Docker build cache
+.docker/

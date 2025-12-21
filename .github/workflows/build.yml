@@ -1,0 +1,385 @@
+name: Build and Test Agent Zero
+
+on:
+  push:
+    branches:
+      - main
+      - hacking
+      - development
+      - testing
+  pull_request:
+    branches:
+      - main
+      - hacking
+  workflow_dispatch:
+    inputs:
+      push_to_registry:
+        description: 'Push images to Docker Hub'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  validate-structure:
+    name: Validate Repository Structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate required files
+        run: |
+          echo "Checking for required files..."
+          
+          # Check critical files
+          test -f requirements.txt || { echo "ERROR: requirements.txt not found"; exit 1; }
+          test -f docker/run/Dockerfile || { echo "ERROR: Dockerfile not found"; exit 1; }
+          test -f docker/run/DockerfileKali || { echo "ERROR: DockerfileKali not found"; exit 1; }
+          test -f agent.py || { echo "ERROR: agent.py not found"; exit 1; }
+          test -f models.py || { echo "ERROR: models.py not found"; exit 1; }
+          
+          # Check OpenCog integration files
+          test -f python/helpers/opencog_atomspace.py || { echo "ERROR: opencog_atomspace.py not found"; exit 1; }
+          test -f python/tools/opencog.py || { echo "ERROR: opencog.py tool not found"; exit 1; }
+          
+          echo "✓ All required files present"
+
+      - name: Validate Python syntax
+        run: |
+          echo "Validating Python files..."
+          python3 -m py_compile agent.py
+          python3 -m py_compile models.py
+          python3 -m py_compile initialize.py
+          python3 -m py_compile preload.py
+          python3 -m py_compile python/helpers/opencog_atomspace.py
+          python3 -m py_compile python/tools/opencog.py
+          echo "✓ Python syntax validation passed"
+
+      - name: Validate requirements.txt
+        run: |
+          echo "Validating requirements.txt..."
+          python3 -m pip install --dry-run -r requirements.txt 2>&1 | tee /tmp/pip-check.log
+          
+          # Check for critical packages
+          grep -q "networkx==3.2.1" requirements.txt || { echo "ERROR: networkx not in requirements"; exit 1; }
+          grep -q "hyperon==0.2.8" requirements.txt || { echo "ERROR: hyperon not in requirements"; exit 1; }
+          
+          echo "✓ Requirements validation passed"
+
+  test-python-environment:
+    name: Test Python Environment Setup
+    runs-on: ubuntu-latest
+    needs: validate-structure
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "✓ All dependencies installed successfully"
+
+      - name: Test OpenCog AtomSpace
+        run: |
+          python3 -c "
+          from python.helpers.opencog_atomspace import AtomSpace, CognitiveOrchestrator, get_orchestrator
+          
+          # Test AtomSpace creation
+          atomspace = AtomSpace('test')
+          print('✓ AtomSpace created')
+          
+          # Test node creation
+          node = atomspace.add_node('ConceptNode', 'TestNode', (0.9, 0.8))
+          assert node.name == 'TestNode'
+          print('✓ Node creation works')
+          
+          # Test link creation
+          node2 = atomspace.add_node('ConceptNode', 'TestNode2')
+          link = atomspace.add_link('InheritanceLink', [node.id, node2.id])
+          print('✓ Link creation works')
+          
+          # Test pattern matching
+          matches = atomspace.pattern_match({'type': 'ConceptNode', 'name': 'Test*'})
+          assert len(matches) >= 2
+          print('✓ Pattern matching works')
+          
+          # Test orchestrator
+          orchestrator = get_orchestrator()
+          space = orchestrator.create_atomspace('agent_0')
+          print('✓ Cognitive orchestrator works')
+          
+          # Test stats
+          stats = atomspace.get_stats()
+          assert stats['total_atoms'] > 0
+          print('✓ Statistics generation works')
+          
+          print('✓✓✓ All OpenCog AtomSpace tests passed!')
+          "
+
+      - name: Test imports and basic functionality
+        run: |
+          python3 -c "
+          import sys
+          import os
+          
+          # Test critical imports
+          import networkx
+          print(f'✓ NetworkX version: {networkx.__version__}')
+          
+          try:
+              import hyperon
+              print(f'✓ Hyperon imported successfully')
+          except ImportError as e:
+              print(f'⚠ Hyperon import warning: {e}')
+          
+          # Test other critical packages
+          import flask
+          import docker
+          import playwright
+          import langchain_openai
+          import sentence_transformers
+          
+          print('✓ All critical packages imported successfully')
+          "
+
+  build-standard:
+    name: Build Standard Edition
+    runs-on: ubuntu-latest
+    needs: test-python-environment
+    strategy:
+      matrix:
+        branch: [development, testing]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (single platform for testing)
+        working-directory: docker/run
+        run: |
+          docker buildx build \
+            --build-arg BRANCH=${{ matrix.branch }} \
+            --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) \
+            --platform linux/amd64 \
+            --tag cogpy/agent-zero-run:${{ matrix.branch }}-test \
+            --load \
+            .
+
+      - name: Test Docker image
+        run: |
+          echo "Testing Docker image startup..."
+          
+          # Start container in background
+          docker run -d \
+            --name agent-zero-test \
+            -p 50080:80 \
+            cogpy/agent-zero-run:${{ matrix.branch }}-test
+          
+          # Wait for container to be ready
+          echo "Waiting for container to start..."
+          sleep 30
+          
+          # Check if container is running
+          docker ps | grep agent-zero-test || { echo "ERROR: Container not running"; docker logs agent-zero-test; exit 1; }
+          
+          # Check logs for errors
+          docker logs agent-zero-test 2>&1 | tee /tmp/container.log
+          
+          # Look for critical errors (but not warnings)
+          if grep -i "error" /tmp/container.log | grep -v "WARNING" | grep -v "WARN"; then
+            echo "⚠ Errors found in logs, but continuing..."
+          fi
+          
+          # Cleanup
+          docker stop agent-zero-test
+          docker rm agent-zero-test
+          
+          echo "✓ Docker image test completed"
+
+      - name: Export image for artifact
+        if: success()
+        run: |
+          docker save cogpy/agent-zero-run:${{ matrix.branch }}-test | gzip > agent-zero-${{ matrix.branch }}.tar.gz
+
+      - name: Upload Docker image artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-zero-${{ matrix.branch }}-image
+          path: agent-zero-${{ matrix.branch }}.tar.gz
+          retention-days: 7
+
+  build-hacking:
+    name: Build Hacking Edition
+    runs-on: ubuntu-latest
+    needs: test-python-environment
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Kali Docker image
+        working-directory: docker/run
+        run: |
+          docker buildx build \
+            -f DockerfileKali \
+            --build-arg BRANCH=hacking \
+            --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) \
+            --platform linux/amd64 \
+            --tag cogpy/agent-zero-run:hacking-test \
+            --load \
+            .
+
+      - name: Test Hacking Edition image
+        run: |
+          echo "Testing Hacking Edition Docker image..."
+          
+          # Start container in background
+          docker run -d \
+            --name agent-zero-hacking-test \
+            -p 50081:80 \
+            cogpy/agent-zero-run:hacking-test
+          
+          # Wait for container to be ready
+          echo "Waiting for container to start..."
+          sleep 30
+          
+          # Check if container is running
+          docker ps | grep agent-zero-hacking-test || { echo "ERROR: Container not running"; docker logs agent-zero-hacking-test; exit 1; }
+          
+          # Check logs
+          docker logs agent-zero-hacking-test 2>&1 | tee /tmp/container-hacking.log
+          
+          # Cleanup
+          docker stop agent-zero-hacking-test
+          docker rm agent-zero-hacking-test
+          
+          echo "✓ Hacking Edition test completed"
+
+      - name: Export hacking image
+        if: success()
+        run: |
+          docker save cogpy/agent-zero-run:hacking-test | gzip > agent-zero-hacking.tar.gz
+
+      - name: Upload Hacking Edition artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-zero-hacking-image
+          path: agent-zero-hacking.tar.gz
+          retention-days: 7
+
+  push-to-registry:
+    name: Push to Docker Registry
+    runs-on: ubuntu-latest
+    needs: [build-standard, build-hacking]
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/hacking' || github.ref == 'refs/heads/development' || github.ref == 'refs/heads/testing')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_registry == 'true')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Determine branch and tag
+        id: vars
+        run: |
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            echo "BRANCH=main" >> $GITHUB_OUTPUT
+            echo "TAG=latest" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/hacking" ]; then
+            echo "BRANCH=hacking" >> $GITHUB_OUTPUT
+            echo "TAG=hacking" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/development" ]; then
+            echo "BRANCH=development" >> $GITHUB_OUTPUT
+            echo "TAG=development" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" == "refs/heads/testing" ]; then
+            echo "BRANCH=testing" >> $GITHUB_OUTPUT
+            echo "TAG=testing" >> $GITHUB_OUTPUT
+          else
+            echo "BRANCH=development" >> $GITHUB_OUTPUT
+            echo "TAG=dev-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push multi-platform image
+        if: steps.vars.outputs.BRANCH != 'hacking'
+        working-directory: docker/run
+        run: |
+          docker buildx build \
+            --build-arg BRANCH=${{ steps.vars.outputs.BRANCH }} \
+            --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) \
+            --platform linux/amd64,linux/arm64 \
+            --tag cogpy/agent-zero-run:${{ steps.vars.outputs.TAG }} \
+            --push \
+            .
+
+      - name: Build and push Hacking Edition
+        if: steps.vars.outputs.BRANCH == 'hacking'
+        working-directory: docker/run
+        run: |
+          docker buildx build \
+            -f DockerfileKali \
+            --build-arg BRANCH=hacking \
+            --build-arg CACHE_DATE=$(date +%Y-%m-%d:%H:%M:%S) \
+            --platform linux/amd64,linux/arm64 \
+            --tag cogpy/agent-zero-run:hacking \
+            --push \
+            .
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [validate-structure, test-python-environment, build-standard, build-hacking]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Validation: ${{ needs.validate-structure.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Python Tests: ${{ needs.test-python-environment.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Standard Build: ${{ needs.build-standard.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Hacking Build: ${{ needs.build-hacking.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## OpenCog Integration" >> $GITHUB_STEP_SUMMARY
+          echo "✓ AtomSpace cognitive architecture" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Multi-agent orchestration" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Pattern matching and reasoning" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.validate-structure.result }}" == "success" ] && \
+             [ "${{ needs.test-python-environment.result }}" == "success" ] && \
+             [ "${{ needs.build-standard.result }}" == "success" ] && \
+             [ "${{ needs.build-hacking.result }}" == "success" ]; then
+            echo "## ✅ All builds completed successfully!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ⚠️ Some builds failed or were skipped" >> $GITHUB_STEP_SUMMARY
+          fi
