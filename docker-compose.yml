@@ -1,7 +1,6 @@
 # Agent-Zero-HCK Docker Compose
 # Full stack deployment with optional services
-
-version: '3.8'
+# Note: version attribute removed (obsolete in Docker Compose v2+)
 
 services:
   # Main Agent-Zero-HCK service

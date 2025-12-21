@@ -308,6 +308,18 @@ jobs:
 
       - name: Run integration tests
         run: |
+          # Wait for container to be fully ready (handle restart timing)
+          echo "Waiting for container to be ready..."
+          for i in {1..10}; do
+            if docker compose exec -T agent-zero-hck python3.11 -c "print('ready')" 2>/dev/null; then
+              echo "Container is ready!"
+              break
+            fi
+            echo "Waiting for container... ($i/10)"
+            sleep 3
+          done
+          
+          # Run the actual integration test
           docker compose exec -T agent-zero-hck python3.11 -c "
           from agents.toga_hck.agent import AgentZeroHCK, AgentZeroHCKConfig
           config = AgentZeroHCKConfig()
