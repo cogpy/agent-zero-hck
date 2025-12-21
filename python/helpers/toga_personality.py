@@ -351,7 +351,15 @@ def initialize_toga_personality(
         Initialized TogaPersonality instance
     """
     if custom_traits:
-        personality = TogaPersonalityTensor(**custom_traits)
+        # Filter to only valid TogaPersonalityTensor fields
+        valid_fields = {
+            "cheerfulness", "obsessiveness", "playfulness", "chaos",
+            "vulnerability", "identity_fluidity", "twisted_love",
+            "cuteness_sensitivity", "no_actual_harm", "respect_boundaries",
+            "constructive_expression"
+        }
+        filtered_traits = {k: v for k, v in custom_traits.items() if k in valid_fields}
+        personality = TogaPersonalityTensor(**filtered_traits)
     else:
         personality = TogaPersonalityTensor()
 
