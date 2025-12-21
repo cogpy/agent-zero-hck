@@ -1,0 +1,24 @@
+name = "agent-zero-avatar-api"
+main = "index.js"
+compatibility_date = "2024-12-01"
+
+# KV namespace for session storage
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# D1 database for persistent data
+[[d1_databases]]
+binding = "DB"
+database_name = "agent-zero-avatar"
+database_id = "your-d1-database-id"
+
+# Environment variables
+[vars]
+OPENAI_API_KEY = ""  # Set via wrangler secret
+
+# Routes
+routes = [
+  { pattern = "*/api/avatar/*", zone_name = "your-domain.com" }
+]

@@ -1,0 +1,60 @@
+# Dockerfile for the full Agent-Zero-HCK stack
+
+# --- Build Stage: WebVM ---
+FROM node:22-alpine AS webvm-builder
+
+WORKDIR /app/webvm
+
+# Copy WebVM source and install dependencies
+COPY environments/webvm/package.json environments/webvm/pnpm-lock.yaml ./
+RUN pnpm install
+
+# Copy source code and build
+COPY environments/webvm/ .
+RUN pnpm run build
+
+# --- Build Stage: DaedalOS ---
+FROM node:22-alpine AS daedalos-builder
+
+WORKDIR /app/daedalos
+
+# Copy DaedalOS source and install dependencies
+COPY environments/daedalos/package.json environments/daedalos/pnpm-lock.yaml ./
+RUN pnpm install
+
+# Copy source code and build
+COPY environments/daedalos/ .
+RUN pnpm run build
+
+# --- Final Stage: Main Application ---
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source code
+COPY . .
+
+# Copy built frontends
+COPY --from=webvm-builder /app/webvm/build /app/static/webvm
+COPY --from=daedalos-builder /app/daedalos/dist /app/static/daedalos
+
+# Expose ports
+EXPOSE 8000  # Main API
+EXPOSE 8001  # Avatar API
+
+# Set environment variables
+ENV AVATAR_API_PORT=8001
+ENV STATIC_DIR=/app/static
+
+# Start the application
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "-b", "0.0.0.0:8000", "python.main:app"]

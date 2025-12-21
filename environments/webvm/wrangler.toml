@@ -1,0 +1,26 @@
+name = "agent-zero-webvm"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "build"
+
+[site]
+bucket = "build"
+
+# Environment variables
+[vars]
+AVATAR_API_URL = "https://avatar-api.your-domain.workers.dev"
+
+# KV namespace bindings (for session storage)
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "your-kv-namespace-id"
+
+# D1 database bindings (if needed)
+[[d1_databases]]
+binding = "DB"
+database_name = "agent-zero-db"
+database_id = "your-d1-database-id"
+
+# R2 bucket bindings (for file storage)
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "agent-zero-assets"

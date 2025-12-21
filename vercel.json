@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "environments/webvm/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
+    },
+    {
+      "src": "python/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "python/main.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "environments/webvm/build/$1"
+    }
+  ]
+}
+}
