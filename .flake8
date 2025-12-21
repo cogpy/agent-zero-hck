@@ -1,0 +1,38 @@
+[flake8]
+# Exclude directories
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    env,
+    ENV,
+    build,
+    dist,
+    *.egg-info,
+    .eggs,
+    .tox,
+    .pytest_cache,
+    .mypy_cache,
+    node_modules
+
+# Maximum line length (Black uses 88)
+max-line-length = 88
+
+# Extend default ignore list
+# E203: whitespace before ':' (conflicts with Black)
+# E501: line too long (handled by Black)  
+# W503: line break before binary operator (conflicts with Black)
+extend-ignore = E203,E501,W503
+
+# Select specific error codes to check
+select = E9,F63,F7,F82
+
+# Show source code for each error
+show-source = True
+
+# Count errors
+count = True
+
+# Show statistics
+statistics = True

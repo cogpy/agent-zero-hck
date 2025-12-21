@@ -578,5 +578,58 @@ def main():
     print("║     Agent-Zero-HCK - Himiko Toga Cognitive Kernel (Advanced)  ║")
     print("╚═══════════════════════════════════════════════════════════════╝")
     print()
-    test_agent_zero_hck()
+
+    # Initialize and test agent
+    print("Initializing Agent-Zero-HCK...")
+    print()
+
+    # Create agent with default config
+    agent = initialize_agent_zero_hck()
+
+    print("Agent Status:")
+    print(agent.get_status())
+    print()
+
+    # Test basic interaction
+    print("=== Test 1: Basic Interaction ===")
+    response = agent.process_message("Hello! Can you help me with security testing?")
+    print(response)
+    print()
+
+    # Test Transform Quirk
+    print("=== Test 2: Transform Quirk ===")
+    response = agent.process_message(
+        "Taste this WAF configuration",
+        context={
+            "target_name": "ModSecurity WAF",
+            "system_type": "WAF",
+            "code_sample": 'SecRule REQUEST_HEADERS:User-Agent "badbot" "deny,status:403"',
+        },
+    )
+    print(response)
+    print()
+
+    # Test Security Testing
+    print("=== Test 3: Security Testing ===")
+    response = agent.process_message(
+        "Analyze this web application",
+        context={"target_name": "TestApp", "target_type": "web application"},
+    )
+    print(response)
+    print()
+
+    # Test Subordinate Spawning
+    print("=== Test 4: Subordinate Spawning ===")
+    subordinate = agent.spawn_subordinate("reconnaissance", personality_inheritance=0.7)
+    if subordinate:
+        print(f"Spawned subordinate: {subordinate.hck_config.agent_name}")
+        print(
+            f"Subordinate personality: cheerfulness={subordinate.toga_personality.personality.cheerfulness:.2f}"
+        )
+    print()
+
+    # Final status
+    print("=== Final Status ===")
+    print(agent.get_status())
+
     return 0
