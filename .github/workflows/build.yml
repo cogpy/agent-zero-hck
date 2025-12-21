@@ -33,7 +33,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Black formatter check
-        run: black --check --diff .
+        run: black --check --diff . --exclude 'environments|lib'
 
       - name: Run Flake8
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics

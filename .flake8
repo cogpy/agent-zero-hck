@@ -14,7 +14,8 @@ exclude =
     .tox,
     .pytest_cache,
     .mypy_cache,
-    node_modules
+    node_modules,
+    environments
 
 # Maximum line length (Black uses 88)
 max-line-length = 88
