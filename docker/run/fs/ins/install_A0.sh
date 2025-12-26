@@ -22,6 +22,10 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 # Install remaining A0 python packages
 pip install -r /git/agent-zero/requirements.txt
 
+# Install litellm explicitly (upstream dependency not in requirements.txt)
+echo "Installing litellm (upstream dependency)..."
+pip install litellm
+
 # install playwright
 bash /ins/install_playwright.sh "$@"
 

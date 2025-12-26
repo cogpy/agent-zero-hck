@@ -24,8 +24,20 @@ EOF
 
 apt-get update && apt-get -y upgrade
 
-apt-get install -y --no-install-recommends \
-    python3.12 python3.12-venv python3.12-dev
+# Try to install Python 3.12, but fall back to system Python if unavailable
+if apt-cache show python3.12 > /dev/null 2>&1; then
+    echo "Installing Python 3.12 from sid..."
+    apt-get install -y --no-install-recommends \
+        python3.12 python3.12-venv python3.12-dev || {
+        echo "WARNING: Failed to install Python 3.12, using system Python"
+        apt-get install -y --no-install-recommends \
+            python3 python3-venv python3-dev python3-pip
+    }
+else
+    echo "Python 3.12 not available in sid, using system Python"
+    apt-get install -y --no-install-recommends \
+        python3 python3-venv python3-dev python3-pip
+fi
 
 echo "=====MID UPDATE====="
 
@@ -36,14 +48,21 @@ apt-get install -y --no-install-recommends \
 
 echo "=====AFTER UPDATE====="
 
-# ★ 3. Switch the interpreter
-update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 0
-update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
-update-alternatives --set python3 /usr/bin/python3.12
+# ★ 3. Switch the interpreter (if Python 3.12 is available)
+if command -v python3.12 > /dev/null 2>&1; then
+    echo "Setting up Python 3.12 as default..."
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.13 0 2>/dev/null || true
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
+    update-alternatives --set python3 /usr/bin/python3.12
+else
+    echo "Using system Python version: $(python3 --version)"
+fi
 
 # ★ 4. Make sure pip matches
-# python3 -m ensurepip --upgrade
-# python3 -m pip install --upgrade pip
+python3 -m ensurepip --upgrade 2>/dev/null || apt-get install -y python3-pip
+python3 -m pip install --upgrade pip
+
+echo "Python setup complete: $(python3 --version)"
 
 # Prepare SSH daemon
 bash /ins/setup_ssh.sh "$@"
